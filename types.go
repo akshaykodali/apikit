@@ -29,7 +29,7 @@ type Payload interface {
 type Response[T any] struct {
 	Success bool              `json:"success"`
 	Message string            `json:"message"`
-	Data    *T                `json:"data,omitempty"`
+	Data    T                 `json:"data,omitempty"`
 	Errors  map[string]string `json:"errors,omitempty,omitzero"`
 }
 

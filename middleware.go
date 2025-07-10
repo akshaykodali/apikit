@@ -38,10 +38,11 @@ func CorsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func JsonMiddleware[P Payload, R any](db *pgxpool.Pool, process func(*http.Request, *pgxpool.Pool, *P) (*R, error)) http.Handler {
+func JsonMiddleware[P Payload, R any](db *pgxpool.Pool, process func(*http.Request, *pgxpool.Pool, P) (R, error)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "PUT" {
-			result, err := process(r, db, nil)
+			var p P
+			result, err := process(r, db, p)
 			encode(r, w, result, nil, err)
 			return
 		}

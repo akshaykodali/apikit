@@ -10,20 +10,20 @@ import (
 
 const TraceIdKey ctxKey = "traceId"
 
-func decode[P Payload](r *http.Request) (*P, map[string]string, error) {
+func decode[P Payload](r *http.Request) (P, map[string]string, error) {
 	var p P
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		return nil, nil, ErrorBadRequest
+		return p, nil, ErrorBadRequest
 	}
 
 	if problems := p.Validate(r.Context()); len(problems) > 0 {
-		return nil, problems, ErrorUnprocessableEntity
+		return p, problems, ErrorUnprocessableEntity
 	}
 
-	return &p, nil, nil
+	return p, nil, nil
 }
 
-func encode[T any](r *http.Request, w http.ResponseWriter, data *T, problems map[string]string, err error) {
+func encode[T any](r *http.Request, w http.ResponseWriter, data T, problems map[string]string, err error) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var status int
