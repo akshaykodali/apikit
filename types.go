@@ -18,7 +18,7 @@ type ctxKey string
 
 type Flusher interface {
 	Interval() time.Duration
-	Flush(*[]*Log)
+	Flush([]Log)
 }
 
 type Log struct {
@@ -62,6 +62,5 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 }
 
 type Service[P Payload, Result any] interface {
-	Process(*http.Request) (Result, error)
-	ProcessWithPayload(*http.Request, P) (Result, error)
+	Process(*http.Request, Payload) (Result, error)
 }

@@ -59,12 +59,15 @@ func CorsMiddleware(config CorsConfig, next http.Handler) http.Handler {
 
 func JsonMiddleware[P Payload, Result any](service Service[P, Result]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var result Result
-		var e error
+		var (
+			p      P
+			result Result
+			e      error
+		)
 
 		switch r.Method {
 		case "GET", "DELETE":
-			result, e = service.Process(r)
+			result, e = service.Process(r, p)
 		case "POST", "PUT":
 			payload, problems, err := decode[P](r)
 			if len(problems) > 0 || err != nil {
@@ -72,7 +75,7 @@ func JsonMiddleware[P Payload, Result any](service Service[P, Result]) http.Hand
 				return
 			}
 
-			result, e = service.ProcessWithPayload(r, payload)
+			result, e = service.Process(r, payload)
 		default:
 			e = ErrorMethodNotImplemented
 		}

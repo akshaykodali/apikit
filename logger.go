@@ -11,7 +11,7 @@ func CreateLogger(wg *sync.WaitGroup, httpLogs <-chan Log, flusher Flusher) {
 	go func() {
 		defer wg.Done()
 
-		buffer := make([]*Log, 0, 1000)
+		buffer := make([]Log, 0, 1000)
 
 		var interval time.Duration
 		if flusher.Interval() == 0 {
@@ -28,16 +28,17 @@ func CreateLogger(wg *sync.WaitGroup, httpLogs <-chan Log, flusher Flusher) {
 			case log, ok := <-httpLogs:
 				if !ok {
 					if len(buffer) > 0 {
-						flusher.Flush(&buffer)
+						flusher.Flush(buffer)
 					}
 
 					return
 				}
 
-				buffer = append(buffer, &log)
+				buffer = append(buffer, log)
 			case <-ticker.C:
 				if len(buffer) > 0 {
-					flusher.Flush(&buffer)
+					flusher.Flush(buffer)
+					buffer = make([]Log, 0, 1000)
 				}
 			}
 		}
