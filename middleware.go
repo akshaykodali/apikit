@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func AuthMiddleware(role string, next http.Handler) http.Handler {
+func authMiddleware(role string, next http.Handler) http.Handler {
 	// tbd: implement rbac
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
