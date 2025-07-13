@@ -68,7 +68,7 @@ func JsonMiddleware[P Payload, Result any](service Service[P, Result]) http.Hand
 		case "POST", "PUT":
 			payload, problems, err := decode[P](r)
 			if len(problems) > 0 || err != nil {
-				encode(r, w, result, problems, err)
+				encode[*Result](r, w, nil, problems, err)
 				return
 			}
 
