@@ -16,7 +16,7 @@ func decode[P Payload](r *http.Request) (P, map[string]string, error) {
 		return p, nil, ErrorBadRequest
 	}
 
-	if problems := p.Validate(r.Context()); len(problems) > 0 {
+	if problems := p.Validate(); len(problems) > 0 {
 		return p, problems, ErrorUnprocessableEntity
 	}
 

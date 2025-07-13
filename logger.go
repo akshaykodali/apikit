@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type Flusher interface {
-	Interval() time.Duration
-	Flush(*[]*Log)
-}
-
 func CreateLogger(wg *sync.WaitGroup, httpLogs <-chan Log, flusher Flusher) {
 	wg.Add(1)
 

@@ -2,7 +2,6 @@ package apikit
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"time"
 )
@@ -16,6 +15,11 @@ type CorsConfig struct {
 }
 
 type ctxKey string
+
+type Flusher interface {
+	Interval() time.Duration
+	Flush(*[]*Log)
+}
 
 type Log struct {
 	TraceId    string
@@ -31,7 +35,7 @@ type Log struct {
 }
 
 type Payload interface {
-	Validate(ctx context.Context) map[string]string
+	Validate() map[string]string
 }
 
 type Response[T any] struct {
