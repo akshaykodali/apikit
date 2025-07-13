@@ -3,18 +3,29 @@ package apikit
 import (
 	"sync"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func CreateLogger(wg *sync.WaitGroup, db *pgxpool.Pool, httpLogs <-chan Log, flush func(*pgxpool.Pool, *[]Log)) {
+type Flusher interface {
+	Interval() time.Duration
+	Flush(*[]*Log)
+}
+
+func CreateLogger(wg *sync.WaitGroup, httpLogs <-chan Log, flusher Flusher) {
 	wg.Add(1)
 
 	go func() {
 		defer wg.Done()
 
-		buffer := make([]Log, 0, 1000)
-		ticker := time.NewTicker(15 * time.Second)
+		buffer := make([]*Log, 0, 1000)
+
+		var interval time.Duration
+		if flusher.Interval() == 0 {
+			interval = 5 * time.Second
+		} else {
+			interval = flusher.Interval()
+		}
+
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
 		for {
@@ -22,16 +33,16 @@ func CreateLogger(wg *sync.WaitGroup, db *pgxpool.Pool, httpLogs <-chan Log, flu
 			case log, ok := <-httpLogs:
 				if !ok {
 					if len(buffer) > 0 {
-						flush(db, &buffer)
+						flusher.Flush(&buffer)
 					}
 
 					return
 				}
 
-				buffer = append(buffer, log)
+				buffer = append(buffer, &log)
 			case <-ticker.C:
 				if len(buffer) > 0 {
-					flush(db, &buffer)
+					flusher.Flush(&buffer)
 				}
 			}
 		}

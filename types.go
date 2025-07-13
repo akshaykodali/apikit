@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+type CorsConfig struct {
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	AllowCredentials bool
+	MaxAge           int
+}
+
 type ctxKey string
 
 type Log struct {
@@ -47,4 +55,9 @@ func (r *responseRecorder) WriteHeader(status int) {
 func (r *responseRecorder) Write(b []byte) (int, error) {
 	r.body.Write(b)
 	return r.ResponseWriter.Write(b)
+}
+
+type Service[P Payload, Result any] interface {
+	Process(*http.Request) (Result, error)
+	ProcessWithPayload(*http.Request, P) (Result, error)
 }

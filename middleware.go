@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func AuthMiddleware(role string, next http.Handler) http.Handler {
@@ -19,14 +18,6 @@ func AuthMiddleware(role string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 	})
-}
-
-type CorsConfig struct {
-	AllowedOrigins   []string
-	AllowedMethods   []string
-	AllowedHeaders   []string
-	AllowCredentials bool
-	MaxAge           int
 }
 
 func CorsMiddleware(config CorsConfig, next http.Handler) http.Handler {
@@ -66,23 +57,27 @@ func CorsMiddleware(config CorsConfig, next http.Handler) http.Handler {
 	})
 }
 
-func JsonMiddleware[P Payload, R any](db *pgxpool.Pool, process func(*http.Request, *pgxpool.Pool, P) (R, error)) http.Handler {
+func JsonMiddleware[P Payload, Result any](service Service[P, Result]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" && r.Method != "PUT" {
-			var p P
-			result, err := process(r, db, p)
-			encode(r, w, result, nil, err)
-			return
+		var result Result
+		var e error
+
+		switch r.Method {
+		case "GET", "DELETE":
+			result, e = service.Process(r)
+		case "POST", "PUT":
+			payload, problems, err := decode[P](r)
+			if len(problems) > 0 || err != nil {
+				encode(r, w, result, problems, err)
+				return
+			}
+
+			result, e = service.ProcessWithPayload(r, payload)
+		default:
+			e = ErrorMethodNotImplemented
 		}
 
-		payload, problems, err := decode[P](r)
-		if len(problems) > 0 || err != nil {
-			encode[*R](r, w, nil, problems, err)
-			return
-		}
-
-		result, err := process(r, db, payload)
-		encode(r, w, result, nil, err)
+		encode(r, w, result, nil, e)
 	})
 }
 
