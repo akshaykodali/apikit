@@ -77,7 +77,7 @@ func JsonMiddleware[P Payload, Result any](service Service[P, Result]) http.Hand
 
 			result, e = service.Process(r, payload)
 		default:
-			e = ErrorMethodNotImplemented
+			e = ErrorMethodNotAllowed
 		}
 
 		encode(r, w, result, nil, e)

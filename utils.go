@@ -47,6 +47,8 @@ func encode[T any](r *http.Request, w http.ResponseWriter, data T, problems map[
 		status = http.StatusConflict
 	case ErrorNotFound:
 		status = http.StatusNotFound
+	case ErrorMethodNotAllowed:
+		status = http.StatusMethodNotAllowed
 	case ErrorUnprocessableEntity:
 		status = http.StatusUnprocessableEntity
 	default:
