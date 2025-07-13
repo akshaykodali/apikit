@@ -62,5 +62,5 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 }
 
 type Service[P Payload, Result any] interface {
-	Process(*http.Request, Payload) (Result, error)
+	Process(*http.Request, P) (Result, error)
 }
