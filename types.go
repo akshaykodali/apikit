@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"time"
 )
 
 type ctxKey string
@@ -18,8 +19,7 @@ type Log struct {
 	Status     int
 	Response   string
 	Duration   int64
-	Date       string
-	Time       string
+	Timestamp  time.Time
 }
 
 type Payload interface {

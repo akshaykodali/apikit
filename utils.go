@@ -77,3 +77,17 @@ func GetTraceId(ctx context.Context) string {
 
 	return ""
 }
+
+func isOriginAllowed(origin string, allowedOrigins []string) bool {
+	for _, o := range allowedOrigins {
+		if o == "*" {
+			return true
+		}
+
+		if o == origin {
+			return true
+		}
+	}
+
+	return false
+}
