@@ -20,7 +20,7 @@ type Response[T any] struct {
 	Meta    *Meta  `json:"meta,omitempty"`
 }
 
-func JsonMiddleware[P Payload](process func(*http.Request, P) (any, *Meta, error)) http.Handler {
+func JsonMiddleware[P Payload, R any](process func(*http.Request, P) (R, *Meta, error)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		payload, problems, err := decode[P](r)
 		if len(problems) > 0 || err != nil {
@@ -33,7 +33,7 @@ func JsonMiddleware[P Payload](process func(*http.Request, P) (any, *Meta, error
 	})
 }
 
-func JsonResponseMiddleware(process func(*http.Request) (any, *Meta, error)) http.Handler {
+func JsonResponseMiddleware[R any](process func(*http.Request) (R, *Meta, error)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result, meta, err := process(r)
 		encode(r, w, result, meta, err)
