@@ -1,29 +1,36 @@
 package apikit
 
 import (
-	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 )
 
-const TraceIdKey ctxKey = "traceId"
-
 func decode[P Payload](r *http.Request) (P, map[string]string, error) {
-	var p P
-	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		return p, nil, ErrorBadRequest
+	var payload P
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		if e, ok := err.(*json.UnmarshalTypeError); ok {
+			problems := make(map[string]string)
+			problems[e.Field] = fmt.Sprintf("must be %s type", e.Type.String())
+
+			return payload, problems, ErrBadRequest
+		}
+
+		return payload, nil, ErrBadRequest
 	}
 
-	if problems := p.Validate(); len(problems) > 0 {
-		return p, problems, ErrorUnprocessableEntity
+	if problems := payload.Validate(); len(problems) > 0 {
+		return payload, problems, ErrUnprocessableEntity
 	}
 
-	return p, nil, nil
+	return payload, nil, nil
 }
 
-func encode[T any](r *http.Request, w http.ResponseWriter, data T, problems map[string]string, err error) {
+func encode[T any](r *http.Request, w http.ResponseWriter, data T, meta *Meta, err error) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var status int
@@ -37,21 +44,26 @@ func encode[T any](r *http.Request, w http.ResponseWriter, data T, problems map[
 		default:
 			status = http.StatusOK
 		}
-	case ErrorBadRequest:
+	case ErrBadRequest:
 		status = http.StatusBadRequest
-	case ErrorUnauthorized:
+	case ErrUnauthorized:
 		status = http.StatusUnauthorized
-	case ErrorForbidden:
+	case ErrForbidden:
 		status = http.StatusForbidden
-	case ErrorConflict:
+	case ErrConflict:
 		status = http.StatusConflict
-	case ErrorNotFound:
+	case ErrNotFound:
 		status = http.StatusNotFound
-	case ErrorMethodNotAllowed:
+	case ErrMethodNotAllowed:
 		status = http.StatusMethodNotAllowed
-	case ErrorUnprocessableEntity:
+	case ErrUnprocessableEntity:
 		status = http.StatusUnprocessableEntity
 	default:
+		slog.Error(
+			"unhandled error",
+			"err", err,
+			"traceId", GetTraceId(r.Context()),
+		)
 		status = http.StatusInternalServerError
 	}
 	w.WriteHeader(status)
@@ -64,29 +76,30 @@ func encode[T any](r *http.Request, w http.ResponseWriter, data T, problems map[
 		Success: err == nil,
 		Message: strings.ToLower(http.StatusText(status)),
 		Data:    data,
-		Errors:  problems,
+		Meta:    meta,
 	}
 
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		slog.Error("error encoding response", "err", err, "traceId", GetTraceId(r.Context()))
+		slog.Error(
+			"error encoding response",
+			"err", err,
+			"traceId", GetTraceId(r.Context()),
+		)
 	}
 }
 
-func GetTraceId(ctx context.Context) string {
-	if traceId, ok := ctx.Value(TraceIdKey).(string); ok {
-		return traceId
+func getRemoteAddr(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return "invalid remote address"
 	}
 
-	return ""
+	return host
 }
 
 func isOriginAllowed(origin string, allowedOrigins []string) bool {
 	for _, o := range allowedOrigins {
-		if o == "*" {
-			return true
-		}
-
-		if o == origin {
+		if o == "*" || o == origin {
 			return true
 		}
 	}

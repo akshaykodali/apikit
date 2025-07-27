@@ -18,9 +18,15 @@ func CreateServer(ctx context.Context, wg *sync.WaitGroup, host, port string, ha
 
 	wg.Add(1)
 	go func() {
-		slog.Info("starting http server")
+		slog.Info(
+			"starting http server",
+			"addr", net.JoinHostPort(host, port),
+		)
 		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("error in ListenAndServe", "err", err)
+			slog.Error(
+				"unable to start server",
+				"err", err,
+			)
 		}
 	}()
 
@@ -33,7 +39,10 @@ func CreateServer(ctx context.Context, wg *sync.WaitGroup, host, port string, ha
 		defer cancel()
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			slog.Error("error in Shutdown", "err", err)
+			slog.Error(
+				"unable to stop server",
+				"err", err,
+			)
 		}
 
 		close(logCh)
