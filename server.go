@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func CreateServer(ctx context.Context, wg *sync.WaitGroup, host, port string, handler http.Handler, logCh chan Log) {
+func CreateServer(ctx context.Context, wg *sync.WaitGroup, host, port string, handler http.Handler) {
 	server := &http.Server{
 		Addr:    net.JoinHostPort(host, port),
 		Handler: handler,
@@ -44,7 +44,5 @@ func CreateServer(ctx context.Context, wg *sync.WaitGroup, host, port string, ha
 				"err", err,
 			)
 		}
-
-		close(logCh)
 	}()
 }
